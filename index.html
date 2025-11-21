@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jqGrid 基礎範例 - 全功能控制台</title>
+
+    <!-- 載入 Tailwind CSS for modern layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 1. 載入 jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <!-- 2. 載入 jQuery UI CSS (jqGrid 依賴主題) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/themes/base/jquery-ui.min.css">
+
+    <!-- 3. 載入 jqGrid CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqgrid/4.6.0/css/ui.jqgrid.css">
+
+    <!-- 4. 載入 jqGrid JS 語系檔 (繁體中文 'tw') -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqgrid/4.6.0/js/i18n/grid.locale-tw.js"></script>
+
+    <!-- 5. 載入 jqGrid 主程式 JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqgrid/4.6.0/js/jquery.jqGrid.min.js"></script>
+
+    <style>
+        /* 確保 jqGrid 的樣式能夠正確顯示，覆蓋一些 Tailwind 的預設值 */
+        .ui-jqgrid {
+            font-size: 14px;
+        }
+        .ui-jqgrid .ui-jqgrid-hdiv, .ui-jqgrid .ui-jqgrid-bdiv, .ui-jqgrid .ui-jqgrid-pager {
+            /* 讓 jqGrid 的背景與容器有所區分 */
+            background-color: #ffffff;
+        }
+        .ui-jqgrid .ui-jqgrid-htable th div {
+            white-space: normal; /* 讓標題文字可以換行 */
+        }
+        /* 子表格的背景色稍微區分 */
+        .ui-subgrid {
+            background-color: #f7f7f7 !important;
+        }
+        /* 調整自定義按鈕的樣式 */
+        .custom-action-btn {
+            background-color: #3b82f6;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-right: 4px;
+            display: inline-block;
+        }
+        .custom-action-btn:hover {
+            background-color: #2563eb;
+        }
+        /* 美化分組行 */
+        .jqgroup {
+            background-color: #e0f2f1 !important; /* light teal */
+            font-weight: bold;
+            color: #047857;
+            cursor: pointer;
+        }
+        /* 針對凍結欄位調整樣式，讓凍結邊緣更清晰 */
+        .ui-jqgrid-frozen-columns {
+            border-right: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+
+    <div class="max-w-6xl mx-auto p-6 bg-white rounded-lg shadow-xl">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">jqGrid 基礎數據網格範例 - 全功能控制台</h1>
+        <p class="mb-4 text-gray-600">請勾選下方選項，以查看不同功能對網格的影響。網格會在每次變更選項後自動重新載入。</p>
+        
+        <!-- Export Button Area -->
+        <div class="mb-4" id="export-container">
+            <!-- 匯出按鈕將在這裡動態插入 -->
+        </div>
+
+        <!-- 功能控制面板 -->
+        <div id="control-panel" class="mb-6 p-4 border border-indigo-200 rounded-lg bg-indigo-50 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <!-- 基礎功能 -->
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="toggle-sorting" checked class="form-checkbox h-5 w-5 text-indigo-600 rounded">
+                <label for="toggle-sorting" class="text-sm font-medium text-gray-700 select-none">啟用排序 (Sortable)</label>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="toggle-rownumbers" class="form-checkbox h-5 w-5 text-indigo-600 rounded">
+                <label for="toggle-rownumbers" class="text-sm font-medium text-gray-700 select-none">顯示行號 (Row Numbers)</label>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="toggle-pager" checked class="form-checkbox h-5 w-5 text-indigo-600 rounded">
+                <label for="toggle-pager" class="text-sm font-medium text-gray-700 select-none">啟用分頁 (Pager/Pagination)</label>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="toggle-autowidth" checked class="form-checkbox h-5 w-5 text-indigo-600 rounded">
+                <label for="toggle-autowidth" class="text-sm font-medium text-gray-700 select-none">自動寬度 (Auto Width)</label>
+            </div>
+
+            <!-- 進階功能 (Part 1) -->
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="toggle-subgrid" class="form-checkbox h-5 w-5 text-indigo-600 rounded">
+                <label for="toggle-subgrid" class="text-sm font-medium text-gray-700 select-none">啟用子母表格 (Subgrid)</label>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="toggle-search-toolbar" class="form-checkbox h-5 w-5 text-indigo-600 rounded">
+                <label for="toggle-search-toolbar" class="text-sm font-medium text-gray-700 select-none">頂部搜尋列 (Filter Toolbar)</label>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="toggle-multiselect" class="form-checkbox h-5 w-5 text-indigo-600 rounded">
+                <label for="toggle-multiselect" class="text-sm font-medium text-gray-700 select-none">多選模式 (Multi-select)</label>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="toggle-frozen-columns" class="form-checkbox h-5 w-5 text-indigo-600 rounded">
+                <label for="toggle-frozen-columns" class="text-sm font-medium text-gray-700 select-none">凍結 ID 欄位 (Frozen Columns)</label>
+            </div>
+            
+            <!-- 新增功能 (Part 2) -->
+             <div class="flex items-center space-x-2">
+                <!-- 新增：控制 ID 欄位可見性 -->
+                <input type="checkbox" id="toggle-show-data-id" class="form-checkbox h-5 w-5 text-purple-600 rounded">
+                <label for="toggle-show-data-id" class="text-sm font-medium text-gray-700 select-none">顯示資料 ID (Show Data ID)</label>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="toggle-add-row" class="form-checkbox h-5 w-5 text-green-600 rounded">
+                <label for="toggle-add-row" class="text-sm font-medium text-gray-700 select-none">啟用新增行 (Add Row)</label>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="toggle-delete-row" class="form-checkbox h-5 w-5 text-green-600 rounded">
+                <label for="toggle-delete-row" class="text-sm font-medium text-gray-700 select-none">啟用刪除行 (Delete Row)</label>
+            </div>
+             <div class="flex items-center space-x-2">
+                <input type="checkbox" id="toggle-hide-tax" class="form-checkbox h-5 w-5 text-green-600 rounded">
+                <label for="toggle-hide-tax" class="text-sm font-medium text-gray-700 select-none">隱藏含稅欄位 (Hide Tax)</label>
+            </div>
+             <div class="flex items-center space-x-2">
+                <input type="checkbox" id="toggle-grouping" class="form-checkbox h-5 w-5 text-red-600 rounded">
+                <label for="toggle-grouping" class="text-sm font-medium text-gray-700 select-none">資料分組與合計 (Grouping)</label>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="toggle-inline-edit" class="form-checkbox h-5 w-5 text-red-600 rounded">
+                <label for="toggle-inline-edit" class="text-sm font-medium text-gray-700 select-none">行內編輯 (Cell Edit)</label>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="toggle-group-header" class="form-checkbox h-5 w-5 text-red-600 rounded">
+                <label for="toggle-group-header" class="text-sm font-medium text-gray-700 select-none">多層級表頭 (Group Header)</label>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="toggle-export" class="form-checkbox h-5 w-5 text-red-600 rounded">
+                <label for="toggle-export" class="text-sm font-medium text-gray-700 select-none">匯出數據 (Export CSV)</label>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="toggle-custom-action" class="form-checkbox h-5 w-5 text-red-600 rounded">
+                <label for="toggle-custom-action" class="text-sm font-medium text-gray-700 select-none">客製化操作按鈕 (Action Btn)</label>
+            </div>
+        </div>
+        
+        <p class="mb-4 text-sm text-indigo-700 font-semibold">
+            * **注意：** 新增/刪除行功能需要啟用「分頁」才能顯示按鈕。當您勾選新增/刪除時，分頁會自動開啟。
+        </p>
+
+        <!-- 狀態訊息顯示區 (用於顯示單擊/雙擊結果) -->
+        <p id="status-message" class="mb-4 p-3 bg-yellow-100 text-yellow-800 rounded-lg border border-yellow-300 transition duration-300">
+            狀態：請單擊或雙擊任一行以查看效果。
+        </p>
+
+        <!-- 網格表格元素 -->
+        <table id="list"></table>
+
+        <!-- 分頁元件元素 -->
+        <div id="pager"></div>
+
+        <!-- 程式碼片段展示區 (NEW) -->
+        <div id="code-snippet-container" class="mt-8">
+            <h2 class="text-xl font-semibold mb-2 text-gray-700">當前功能相關程式碼片段</h2>
+            <pre id="code-snippet-display" class="bg-gray-800 text-green-300 p-4 rounded-lg overflow-x-auto text-sm shadow-inner min-h-[100px]">
+                <code>// 勾選一個進階功能 (如凍結欄位、子母表格、新增/刪除行)，相關的程式碼片段將會顯示在這裡...</code>
+            </pre>
+        </div>
+
+    </div>
+
+    <script type="text/javascript">
+        // 確保 DOM 準備就緒後執行
+        $(document).ready(function () {
+            
+            // 範例靜態數據
+            var mydata = [
+                {id: "10", item: "筆記型電腦", qty: 120, price: 9800.00, tax: "是", date: "2024-11-01", category: "硬體"},
+                {id: "20", item: "智慧型手機", qty: 250, price: 3500.00, tax: "否", date: "2024-11-05", category: "通訊"},
+                {id: "30", item: "無線滑鼠", qty: 500, price: 250.50, tax: "否", date: "2024-11-10", category: "週邊"},
+                {id: "40", item: "機械鍵盤", qty: 75, price: 1599.00, tax: "是", date: "2024-11-12", category: "週邊"},
+                {id: "50", item: "高解析度螢幕", qty: 90, price: 6200.00, tax: "是", date: "2024-11-15", category: "硬體"},
+                {id: "60", item: "網路攝影機", qty: 300, price: 450.00, tax: "否", date: "2024-11-18", category: "通訊"},
+                {id: "70", item: "隨身碟 128GB", qty: 150, price: 180.00, tax: "否", date: "2024-11-20", category: "儲存"},
+                {id: "80", item: "外接硬碟 1TB", qty: 45, price: 1999.00, tax: "是", date: "2024-11-21", category: "儲存"},
+                {id: "90", item: "藍牙耳機", qty: 600, price: 850.00, tax: "否", date: "2024-11-22", category: "通訊"},
+                {id: "100", item: "路由器", qty: 110, price: 1250.00, tax: "是", date: "2024-11-23", category: "硬體"},
+                {id: "110", item: "平板電腦", qty: 180, price: 7500.00, tax: "是", date: "2024-11-25", category: "硬體"},
+                {id: "120", item: "印表機", qty: 50, price: 3500.00, tax: "是", date: "2024-11-26", category: "辦公設備"},
+            ];
+
+            
+            // 範例子表格數據 (Detail Data)
+            var subdata = {
+                "10": [
+                    { sale_id: "S1001", customer: "王先生", sale_date: "2024-11-01", sold_qty: 1, transaction_price: 9800.00 },
+                    { sale_id: "S1002", customer: "李小姐", sale_date: "2024-11-15", sold_qty: 3, transaction_price: 29400.00 },
+                    { sale_id: "S1003", customer: "張三", sale_date: "2024-11-18", sold_qty: 1, transaction_price: 9800.00 }
+                ],
+                "20": [
+                    { sale_id: "S2001", customer: "陳小姐", sale_date: "2024-11-06", sold_qty: 5, transaction_price: 17500.00 },
+                    { sale_id: "S2002", customer: "林先生", sale_date: "2024-11-20", sold_qty: 2, transaction_price: 7000.00 }
+                ],
+                "30": [
+                    { sale_id: "S3001", customer: "張先生", sale_date: "2024-11-11", sold_qty: 10, transaction_price: 2505.00 },
+                    { sale_id: "S3002", customer: "王小明", sale_date: "2024-11-22", sold_qty: 20, transaction_price: 5010.00 }
+                ]
+            };
+
+            var grid = null;
+            
+            // 處理自定義按鈕點擊事件 (用於 Custom Action Formatter)
+            window.handleCustomAction = (action, id, item) => {
+                let msg = '';
+                if (action === 'view') {
+                    msg = `查看操作: 正在查看 ID ${id} 的商品 (${item})。`;
+                } else if (action === 'inline-edit') {
+                    // 啟用行內編輯功能
+                    jQuery("#list").jqGrid('editRow', id, {
+                        keys: true, // 允許 Enter 儲存
+                        oneditfunc: () => {
+                             msg = `行內編輯: ID ${id} 的商品已進入行編輯模式。`;
+                        },
+                        successfunc: () => {
+                             msg = `行內編輯: ID ${id} 的商品資料已儲存 (本地模擬)。`;
+                             return true; // 必須返回 true 才能退出編輯模式
+                        }
+                    });
+                }
+                $('#status-message').text(`狀態：${msg}`);
+            };
+
+            // 客製化操作按鈕格式化函式 (用於 Custom Action Formatter)
+            const actionFormatter = (cellvalue, options, rowObject) => {
+                const id = rowObject.id;
+                const item = rowObject.item;
+                return `
+                    <span class="custom-action-btn bg-green-500 hover:bg-green-600" onclick="handleCustomAction('view', '${id}', '${item}')">
+                        查看
+                    </span>
+                    <span class="custom-action-btn" onclick="handleCustomAction('inline-edit', '${id}', '${item}')">
+                        編輯
+                    </span>
+                `;
+            };
+            
+            // 匯出數據處理函式 (用於 Export to CSV)
+            const handleExportCsv = () => {
+                const grid = $("#list");
+                const colModel = grid.jqGrid('getGridParam', 'colModel');
+                const colNames = grid.jqGrid('getGridParam', 'colNames');
+                const data = grid.jqGrid('getGridParam', 'data');
+                
+                // 準備 CSV 標頭 (排除 actions, cb, rn, subgrid 欄位)
+                let header = [];
+                let keys = [];
+                for (let i = 0; i < colModel.length; i++) {
+                    const name = colModel[i].name;
+                    // 排除不需要匯出的欄位 (以及隱藏的 ID 欄位)
+                    if (name !== 'actions' && name !== 'cb' && name !== 'rn' && name !== 'subgrid' && colModel[i].hidden !== true) {
+                        header.push(colNames[i]);
+                        keys.push(colModel[i].name);
+                    }
+                }
+                let csvContent = header.join(',') + '\n';
+
+                // 準備 CSV 內容
+                data.forEach(function (row) {
+                    let rowArray = keys.map(key => {
+                        let value = row[key] !== undefined && row[key] !== null ? row[key] : '';
+                        // 處理包含逗號或引號的字串
+                        if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                            value = '"' + value.replace(/"/g, '""') + '"';
+                        }
+                        return value;
+                    });
+                    csvContent += rowArray.join(',') + '\n';
+                });
+
+                // 創建 Blob 並觸發下載
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "jqGrid_export.csv");
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                $('#status-message').text("狀態：資料已成功匯出為 jqGrid_export.csv！");
+            };
+
+
+            // 根據勾選的功能生成並顯示相關的程式碼片段
+            function updateCodeSnippetDisplay() {
+                var frozenColumnsEnabled = $('#toggle-frozen-columns').is(':checked');
+                var subgridEnabled = $('#toggle-subgrid').is(':checked');
+                var addRowEnabled = $('#toggle-add-row').is(':checked');
+                var deleteRowEnabled = $('#toggle-delete-row').is(':checked');
+                var hideTaxEnabled = $('#toggle-hide-tax').is(':checked');
+                var showDataIdEnabled = $('#toggle-show-data-id').is(':checked');
+                
+                var groupingEnabled = $('#toggle-grouping').is(':checked');
+                var inlineEditEnabled = $('#toggle-inline-edit').is(':checked');
+                var groupHeaderEnabled = $('#toggle-group-header').is(':checked');
+                var customActionEnabled = $('#toggle-custom-action').is(':checked');
+
+
+                var code = `// 勾選一個進階功能 (如凍結欄位、子母表格、新增/刪除行)，相關的程式碼片段將會顯示在這裡...`;
+                
+                var snippets = [];
+                
+                // 1. 基本交互與 Form 編輯 (在 Cell Edit 啟用時會被禁用)
+                if (!inlineEditEnabled) {
+                    snippets.push(
+                        `// --- 單擊、雙擊與本地 CRUD 處理 ---\n` +
+                        `// Grid Options 設置:\n` +
+                        `editurl: 'clientArray', // 關鍵！避免本地編輯時出現 URL 錯誤\n\n` +
+                        `onSelectRow: function(id, status, e) {\n` +
+                        `    // 單擊選中一行時的處理邏輯\n` +
+                        `    $('#status-message').text('狀態：您單擊選中了 ID: ' + id);\n` +
+                        `},\n` +
+                        `ondblClickRow: function(id, iRow, iCol, e) {\n` +
+                        `    // 雙擊時打開編輯表單\n` +
+                        `    $(this).jqGrid('editGridRow', id, { width: 500, ... });\n` +
+                        `}`
+                    );
+                }
+                
+                // 顯示資料 ID 欄位
+                if (showDataIdEnabled) {
+                     snippets.push(
+                        `// --- 顯示資料 ID (Data ID Visibility) ---\n` +
+                        `// ColModel 設置 (ID 欄位):\n` +
+                        `{ name: 'id', ..., hidden: ${!showDataIdEnabled}, ... }`
+                    );
+                } else {
+                    snippets.push(
+                        `// --- 隱藏資料 ID (Data ID Visibility) ---\n` +
+                        `// ColModel 設置 (ID 欄位):\n` +
+                        `{ name: 'id', ..., hidden: ${!showDataIdEnabled}, ... }`
+                    );
+                }
+
+
+                // 2. 凍結欄位 & 寬度控制 (已更新為 700px / 150px)
+                if (frozenColumnsEnabled) {
+                    snippets.push(
+                        `// --- 凍結欄位 (Frozen Columns) & 寬度控制 (強制內部滾動) ---\n` +
+                        `// Grid Options 設置:\n` +
+                        `frozenColumns: true,\n` +
+                        `autowidth: false, // 凍結時必須關閉 AutoWidth\n` +
+                        `width: 700, // <--- 關鍵：設定固定寬度 700px\n\n` +
+                        `// ColModel 設置 (所有欄位寬度拉寬至 150px):\n` +
+                        `const fixedWidth150 = 150;\n` +
+                        `{ name: 'id', ..., frozen: true, width: fixedWidth150, ... }, \n` +
+                        `{ name: 'category', ..., width: fixedWidth150, ... },\n` +
+                        `{ name: 'qty', ..., width: fixedWidth150, ... } // ...等所有欄位\n\n` +
+                        `// 在 grid 創建後呼叫:\n` +
+                        `grid.jqGrid('setFrozenColumns');`
+                    );
+                }
+
+                // 3. 子母表格
+                if (subgridEnabled) {
+                    snippets.push(
+                        `// --- 子母表格 (Subgrid) ---\n` +
+                        `// Grid Options 設置:\n` +
+                        `subGrid: true,\n` +
+                        `subGridRowExpanded: function(subgrid_id, row_id) {\n` +
+                        `    // 在這裡初始化子表格 (#subgrid_id_t)\n` +
+                        `    $("#" + subgrid_table_id).jqGrid({ ... });\n` +
+                        `}`
+                    );
+                }
+                
+                // 4. 資料分組與合計
+                if (groupingEnabled) {
+                    snippets.push(
+                        `// --- 資料分組與合計 (Grouping & Summary) ---\n` +
+                        `// Grid Options 設置:\n` +
+                        `grouping: true,\n` +
+                        `groupingView: {\n` +
+                        `    groupField: ['category'],\n` +
+                        `    groupText: ['<b>類別: {0}</b> (共 {1} 種商品)'],\n` +
+                        `    groupOrder: ['asc'],\n` +
+                        `    groupSummary: [true]\n` +
+                        `},\n\n` +
+                        `// ColModel 設置 (在需合計欄位):\n` +
+                        `{ name: 'qty', ..., summaryType: 'sum' },\n` +
+                        `{ name: 'price', ..., summaryType: 'avg' }`
+                    );
+                }
+                
+                // 5. 行內編輯 (Cell Edit)
+                if (inlineEditEnabled) {
+                    snippets.push(
+                        `// --- 行內編輯 (Cell Edit) ---\n` +
+                        `// Grid Options 設置:\n` +
+                        `cellEdit: true,\n` +
+                        `cellsubmit: 'clientArray',\n` +
+                        `// 通常會配合 onSelectRow 進入編輯模式:\n` +
+                        `onSelectRow: function(id) { $(this).jqGrid('editCell', $(this).jqGrid('getInd', id), 0, false); }`
+                    );
+                }
+                
+                // 6. 多層級表頭
+                if (groupHeaderEnabled) {
+                    snippets.push(
+                        `// --- 多層級表頭 (Group Header) ---\n` +
+                        `// 在 grid 創建後呼叫:\n` +
+                        `grid.jqGrid('setGroupHeaders', {\n` +
+                        `    useColSpanStyle: true,\n` +
+                        `    groupHeaders: [{ startColumnName: 'qty', numberOfColumns: 3, titleText: '庫存與價格資訊' }]\n` +
+                        `});`
+                    );
+                }
+                
+                // 7. 客製化操作按鈕
+                if (customActionEnabled) {
+                    snippets.push(
+                        `// --- 客製化操作按鈕 (Custom Action Formatter) ---\n` +
+                        `// ColModel 設置:\n` +
+                        `{ name: 'actions', ..., formatter: actionFormatter, stype: 'text' }, // stype: 'text' 避免初始化錯誤\n\n` +
+                        `// 定義 formatter 函式:\n` +
+                        `const actionFormatter = (cellvalue, options, rowObject) => {\n` +
+                        `    return \`<span onclick="handleCustomAction(...);">按鈕</span>\`;\n` +
+                        `}`
+                    );
+                }
+
+
+                // 8. 新增/刪除行 (NavGrid)
+                if (addRowEnabled || deleteRowEnabled) {
+                    let navGridCode = `// --- 新增/刪除行 (NavGrid) ---\n` +
+                                      `// NavGrid 控制分頁器上的按鈕 (Requires Pager enabled)\n` +
+                                      `grid.jqGrid('navGrid', '#pager', {\n`;
+                    
+                    if (addRowEnabled) {
+                        navGridCode += `    add: true, // 啟用新增按鈕\n`;
+                    } else {
+                        navGridCode += `    add: false,\n`;
+                    }
+                    if (deleteRowEnabled) {
+                        navGridCode += `    del: true, // 啟用刪除按鈕\n`;
+                    } else {
+                         navGridCode += `    del: false,\n`;
+                    }
+                    navGridCode += `    edit: true, search: true, refresh: true\n` +
+                                   `}, \n` +
+                                   `/* Edit Options */, \n` +
+                                   `/* Add Options */, \n` +
+                                   `/* Delete Options */`;
+                    
+                    snippets.push(navGridCode);
+                }
+
+                // 9. 隱藏欄位
+                if (hideTaxEnabled) {
+                    snippets.push(
+                        `// --- 隱藏含稅欄位 (Hide Tax) ---\n` +
+                        `// ColModel (for 'tax' column):\n` +
+                        `{ name: 'tax', index: 'tax', ..., hidden: true },`
+                    );
+                }
+                
+                // 10. 匯出數據
+                if ($('#toggle-export').is(':checked')) {
+                     snippets.push(
+                        `// --- 匯出數據 (Export to CSV) ---\n` +
+                        `// 程式碼位於 handleExportCsv 函式中，用於讀取網格資料並生成 CSV Blob。`
+                    );
+                }
+
+
+                if (snippets.length > 0) {
+                    code = snippets.join('\n\n// ============================\n\n');
+                }
+
+                $('#code-snippet-display code').text(code);
+            }
+
+            // 編輯操作的 afterSubmit 處理邏輯 (用於 NavGrid 和 ondblClickRow)
+            function afterSubmitEdit(response, postdata) {
+                var rowId = postdata.id;
+                var index = mydata.findIndex(row => row.id === rowId);
+                if (index !== -1) {
+                    // 更新本地數據
+                    // 確保 price/qty 是數字類型
+                    postdata.price = parseFloat(postdata.price.replace(/[NT$ ,]/g, ''));
+                    postdata.qty = parseInt(postdata.qty);
+                    
+                    $.extend(mydata[index], postdata);
+                }
+                console.log("Row edited:", postdata);
+                initGrid(); // 重新載入以同步所有數據和狀態
+                return [true, ""]; 
+            }
+
+            // 核心功能：初始化或重新載入 jqGrid
+            function initGrid() {
+                // 1. 取得控制項狀態
+                var sortingEnabled = $('#toggle-sorting').is(':checked');
+                var rownumbersEnabled = $('#toggle-rownumbers').is(':checked');
+                var pagerEnabled = $('#toggle-pager').is(':checked');
+                var autowidthCheckboxEnabled = $('#toggle-autowidth').is(':checked'); 
+                
+                var multiselectEnabled = $('#toggle-multiselect').is(':checked');
+                var searchToolbarEnabled = $('#toggle-search-toolbar').is(':checked');
+                var subgridEnabled = $('#toggle-subgrid').is(':checked');
+                var frozenColumnsEnabled = $('#toggle-frozen-columns').is(':checked'); 
+                var addRowEnabled = $('#toggle-add-row').is(':checked');             
+                var deleteRowEnabled = $('#toggle-delete-row').is(':checked');       
+                var hideTaxEnabled = $('#toggle-hide-tax').is(':checked');
+                var showDataIdEnabled = $('#toggle-show-data-id').is(':checked'); 
+                
+                var groupingEnabled = $('#toggle-grouping').is(':checked');
+                var inlineEditEnabled = $('#toggle-inline-edit').is(':checked');
+                var groupHeaderEnabled = $('#toggle-group-header').is(':checked');
+                var exportEnabled = $('#toggle-export').is(':checked');
+                var customActionEnabled = $('#toggle-custom-action').is(':checked');
+
+
+                // 2. 銷毀舊網格 (如果存在)
+                if (grid && grid.length) {
+                    // 1. 凍結欄位銷毀：如果前一次設置過凍結欄位，必須先解除凍結再銷毀
+                    if (grid.getGridParam('frozenColumns')) {
+                        grid.jqGrid('destroyFrozenColumns');
+                    }
+                    
+                    // 2. 多層表頭銷毀：檢查 htable 內是否有群組標頭行 (修復 hDiv 錯誤的關鍵)
+                    var htable = grid.closest('.ui-jqgrid-view').find('table.ui-jqgrid-htable');
+                    if (htable.find('tr').length > 1) { 
+                         grid.jqGrid('destroyGroupHeader');
+                    }
+
+                    // 3. 卸載網格
+                    grid.jqGrid('GridUnload');
+                }
+
+                // 3. 根據分頁狀態顯示/隱藏分頁元件
+                if (pagerEnabled) {
+                    $('#pager').show();
+                } else {
+                    $('#pager').hide();
+                }
+                
+                // 4. 定義 ColNames 和 ColModel
+                
+                // 設定凍結狀態下的固定寬度為 150px
+                const fixedWidth150 = 150;
+                
+                // 根據凍結狀態決定欄位寬度
+                const idColumnWidth = frozenColumnsEnabled ? fixedWidth150 : 60;
+                const categoryWidth = frozenColumnsEnabled ? fixedWidth150 : 100;
+                // Item 欄位在凍結時設定為 150，非凍結時維持原來的較寬設置以優化佈局
+                const itemWidth = frozenColumnsEnabled ? fixedWidth150 : (customActionEnabled ? 350 : 400); 
+                const qtyPriceDateWidth = frozenColumnsEnabled ? fixedWidth150 : 100;
+                const taxWidth = frozenColumnsEnabled ? fixedWidth150 : 50; 
+                const actionWidth = frozenColumnsEnabled ? fixedWidth150 : 100; // 客製化操作按鈕寬度
+                
+                var colNames = ['記錄 ID', '分類', '商品名稱', '庫存數量', '單價', '含稅', '日期'];
+                var colModel = [
+                    // 1. 原始 'id' 欄位 (作為主鍵，可凍結)
+                    { 
+                        name: 'id', 
+                        index: 'id', 
+                        width: idColumnWidth, // <--- 寬度已變更
+                        sortable: sortingEnabled, 
+                        align: "center", 
+                        key: true, 
+                        frozen: frozenColumnsEnabled, 
+                        editable: true, 
+                        stype: 'text',
+                        hidden: !showDataIdEnabled
+                    }, 
+                    // 2. Category
+                    { name: 'category', index: 'category', width: categoryWidth, sortable: sortingEnabled, editable: true, summaryType: groupingEnabled ? 'count' : null, stype: 'text' }, 
+                    // 3. Item
+                    { name: 'item', index: 'item', width: itemWidth, sortable: sortingEnabled, editable: true, stype: 'text' },
+                    // 4. Qty
+                    { name: 'qty', index: 'qty', width: qtyPriceDateWidth, sortable: sortingEnabled, align: "right", formatter: 'integer', editable: true, edittype: 'text', summaryType: groupingEnabled ? 'sum' : null, stype: 'text' },
+                    // 5. Price
+                    { name: 'price', index: 'price', width: qtyPriceDateWidth, sortable: sortingEnabled, align: "right", formatter: 'currency', editable: true, formatoptions: {decimalSeparator:".", thousandsSeparator: ",", decimalPlaces: 2, prefix: "NT$ "} , summaryType: groupingEnabled ? 'avg' : null, stype: 'text' },
+                    // 6. Tax
+                    { name: 'tax', index: 'tax', width: taxWidth, sortable: sortingEnabled, align: "center", editable: true, edittype: 'select', editoptions: { value: "是:是;否:否" }, hidden: hideTaxEnabled, stype: 'text' },
+                    // 7. Date
+                    { name: 'date', index: 'date', width: qtyPriceDateWidth, sortable: sortingEnabled, align: "center", formatter: 'date', editable: true, formatoptions: { srcformat: 'Y-m-d', newformat: 'Y/m/d' }, stype: 'text' }
+                ];
+                
+                if (customActionEnabled) {
+                    colNames.push('操作');
+                    colModel.push({ 
+                        name: 'actions', 
+                        index: 'actions', 
+                        width: actionWidth, 
+                        align: "center", 
+                        sortable: false, 
+                        search: false, 
+                        stype: 'text',
+                        formatter: actionFormatter 
+                    });
+                }
+                
+                // 決定網格寬度與 AutoWidth 設置
+                var finalAutowidth = autowidthCheckboxEnabled;
+                var finalWidth = null;
+                
+                if (frozenColumnsEnabled) {
+                    // 啟用凍結欄位時，必須固定寬度 700px (使用者要求)
+                    finalAutowidth = false;
+                    finalWidth = 700; // <--- CHANGE: 700px
+                } else {
+                    // 否則，依據 autowidth checkbox 的狀態決定
+                    finalAutowidth = autowidthCheckboxEnabled;
+                    // 如果 AutoWidth 關閉，則將寬度設定為 500px (上次要求)
+                    finalWidth = autowidthCheckboxEnabled ? null : 500; 
+                }
+
+                // 5. 定義基本選項
+                var gridOptions = {
+                    datatype: "local",
+                    data: mydata,
+                    height: 'auto',
+                    width: finalWidth, // <--- 使用最終寬度
+                    colNames: colNames,
+                    colModel: colModel,
+                    caption: "商品庫存一覽表",
+
+                    // 關鍵：設置 clientArray 以避免提交表單時的 URL 錯誤
+                    editurl: 'clientArray', 
+
+                    // 處理單擊事件 (如果啟用 CellEdit 則調整為 CellEdit 模式)
+                    onSelectRow: function(id, status, e) {
+                        if (id) {
+                            if (inlineEditEnabled) {
+                                // Cell Edit 模式: 點擊行時進入第一個可編輯單元格
+                                let firstEditableCol = 0;
+                                for(let i = 0; i < this.p.colModel.length; i++) {
+                                    // 跳過隱藏的 ID 欄位，從第一個可見的編輯欄位開始
+                                    if(this.p.colModel[i].editable && !this.p.colModel[i].hidden) {
+                                        firstEditableCol = i;
+                                        break;
+                                    }
+                                }
+                                // 使用 timeout 確保 onSelectRow 邏輯完成
+                                setTimeout(() => {
+                                    $(this).jqGrid('editCell', $(this).jqGrid('getInd', id), firstEditableCol, false);
+                                    $('#status-message').text('狀態：ID: ' + id + ' 已進入行內編輯模式 (Cell Edit)。');
+                                }, 100); 
+
+                            } else {
+                                // 正常模式
+                                $('#status-message').text('狀態：您單擊選中了 ID: ' + id);
+                            }
+                        }
+                    },
+                    // 處理雙擊事件：雙擊打開編輯表單 (在 Cell Edit 模式時禁用，以避免衝突)
+                    ondblClickRow: inlineEditEnabled ? null : function(id, iRow, iCol, e) {
+                        $(this).jqGrid('editGridRow', id, {
+                            closeAfterEdit: true, 
+                            reloadAfterSubmit: false, 
+                            afterSubmit: afterSubmitEdit,
+                            width: 500 // 設置固定的編輯表單寬度
+                        });
+                        $('#status-message').text('狀態：您雙擊打開了 ID: ' + id + ' 的編輯表單。');
+                    },
+
+                    // 根據控制項設定選項
+                    autowidth: finalAutowidth, // <--- 使用最終 AutoWidth 狀態
+                    rownumbers: rownumbersEnabled,
+                    multiselect: multiselectEnabled,
+                    subGrid: subgridEnabled,
+                    frozenColumns: frozenColumnsEnabled, 
+                    
+                    // 資料分組 (Grouping) 專屬配置
+                    grouping: groupingEnabled,
+                    groupingView: groupingEnabled ? {
+                        groupField: ['category'],
+                        groupColumnShow: [false],
+                        groupText: ['<b>類別: {0}</b> (共 {1} 種商品)'],
+                        groupOrder: ['asc'],
+                        groupSummary: [true], // 顯示分組小計
+                        showSummaryOnHide: true
+                    } : null,
+                    
+                    // 行內編輯 (Cell Edit) 專屬配置
+                    cellEdit: inlineEditEnabled, 
+                    cellsubmit: inlineEditEnabled ? 'clientArray' : null,
+                };
+
+                // 6. 處理 Subgrid 選項
+                if (subgridEnabled) {
+                    gridOptions.subGridRowExpanded = function(subgrid_id, row_id) {
+                        var subgrid_table_id = subgrid_id + "_t";
+                        var subgrid_pager_id = subgrid_id + "_p";
+
+                        $("#" + subgrid_id).html("<table id='" + subgrid_table_id + "' class='scroll'></table><div id='" + subgrid_pager_id + "' class='scroll'></div>");
+
+                        var currentSubdata = subdata[row_id] || [];
+
+                        $("#" + subgrid_table_id).jqGrid({
+                            datatype: "local",
+                            data: currentSubdata,
+                            colNames: ['銷售 ID', '客戶名稱', '銷售日期', '數量', '價格'],
+                            colModel: [
+                                { name: 'sale_id', index: 'sale_id', width: 90, key: true },
+                                { name: 'customer', index: 'customer', width: 130 },
+                                { name: 'sale_date', index: 'sale_date', width: 100, align: "center", formatter: 'date', formatoptions: { srcformat: 'Y-m-d', newformat: 'Y/m/d' } },
+                                { name: 'sold_qty', index: 'sold_qty', width: 70, align: "right", formatter: 'integer' },
+                                { name: 'transaction_price', index: 'transaction_price', width: 100, align: "right", formatter: 'currency', formatoptions: {decimalSeparator:".", thousandsSeparator: ",", decimalPlaces: 2, prefix: "NT$ "} }
+                            ],
+                            height: 'auto',
+                            width: $('#list').width() - 30,
+                            rowNum: 10,
+                            pager: "#" + subgrid_pager_id,
+                            viewrecords: true,
+                            sortname: 'sale_id',
+                            sortorder: "asc",
+                            caption: "商品 ID: " + row_id + " 的近期交易記錄"
+                        });
+                    };
+                }
+
+                // 7. 處理分頁選項
+                if (pagerEnabled) {
+                    gridOptions.pager = '#pager';
+                    gridOptions.rowNum = 5;
+                    gridOptions.rowList = [5, 10, 20];
+                    gridOptions.viewrecords = true;
+                    gridOptions.sortname = 'id';
+                    gridOptions.sortorder = "asc";
+                } else {
+                    gridOptions.rowNum = mydata.length;
+                    gridOptions.pgbuttons = false;
+                    gridOptions.pgtext = null;
+                    gridOptions.pginput = false;
+                }
+
+                // 8. 創建新網格實例
+                grid = $("#list").jqGrid(gridOptions);
+
+                // 9. 凍結欄位 (必須在網格創建後呼叫)
+                if (frozenColumnsEnabled) {
+                    grid.jqGrid('setFrozenColumns');
+                }
+                
+                // 10. 多層級表頭 (Group Header) 必須在網格創建後呼叫
+                if (groupHeaderEnabled) {
+                    // Note: Group Header 的 startColumnName 需要考慮 ID 欄位是否隱藏
+                    const firstDataCol = showDataIdEnabled ? 'category' : 'category'; // 'category' is the first *visible* data column after optional 'id'
+                    
+                    grid.jqGrid('setGroupHeaders', {
+                        useColSpanStyle: true,
+                        groupHeaders: [
+                            // 從 'category' 開始分組，包含 'category', 'item', 'qty', 'price'
+                            { startColumnName: 'category', numberOfColumns: 4, titleText: '商品詳細信息' },
+                            // Custom Action 欄位是否存在影響了欄位數量
+                            { startColumnName: 'tax', numberOfColumns: customActionEnabled ? 3 : 2, titleText: '交易與操作' }
+                        ]
+                    });
+                }
+                
+                // 11. 匯出按鈕顯示與綁定
+                if (exportEnabled) {
+                    $("#export-container").html('<button id="exportCsvBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition duration-150">匯出數據 (CSV)</button>').show();
+                    // 重新綁定事件
+                    $("#exportCsvBtn").off('click').on("click", handleExportCsv); 
+                } else {
+                     $("#export-container").empty().hide();
+                }
+
+                // 12. 添加 NavGrid (包含新增/刪除/編輯)
+                if (pagerEnabled) {
+                    grid.jqGrid('navGrid', '#pager', 
+                        {
+                            edit: true, // 允許編輯，這樣 Add/Del/Search 才能被添加
+                            add: addRowEnabled,
+                            del: deleteRowEnabled,
+                            search: true, 
+                            refresh: true, 
+                            view: false
+                        },
+                        // Edit Options (設定寬度: 500)
+                        { closeAfterEdit: true, reloadAfterSubmit: false, afterSubmit: afterSubmitEdit, width: 500 }, 
+                        // Add Options (設定寬度: 500)
+                        { 
+                            closeAfterAdd: true,
+                            reloadAfterSubmit: false,
+                            addCaption: "新增商品",
+                            bSubmit: "儲存",
+                            bCancel: "取消",
+                            width: 500, // 設置固定的新增表單寬度
+                            afterSubmit: function(response, postdata) {
+                                // 找到當前最大 ID 並增加
+                                var maxId = mydata.reduce(function(max, current) {
+                                    return Math.max(max, parseInt(current.id) || 0);
+                                }, 0);
+                                var newId = (maxId + 10).toString();
+                                
+                                // 插入新數據到本地數據源
+                                var newRow = $.extend({}, postdata, { id: newId });
+                                mydata.push(newRow);
+                                
+                                console.log("New row added locally:", newRow);
+                                initGrid(); // 重新載入網格以顯示新數據
+                                return [true, "", newId]; 
+                            }
+                        }, 
+                        // Delete Options
+                        { 
+                            reloadAfterSubmit: false,
+                            afterSubmit: function(response, postdata) {
+                                // 從本地數據源移除行
+                                // 刪除操作會以 JSON 陣列形式傳遞 ID
+                                var rowId = JSON.parse(postdata.id)[0]; 
+                                mydata = mydata.filter(function(row) {
+                                    return row.id !== rowId;
+                                });
+                                
+                                console.log("Row deleted locally:", rowId);
+                                initGrid(); // 重新載入網格以反映刪除
+                                return [true, ""]; 
+                            }
+                        },
+                        // Search Options
+                        { sopt:['cn','bw','eq','ne','lt','gt','ew'], closeOnEscape: true, multipleSearch: true, closeAfterSearch: true, width: 500 }, // 搜尋表單也設定寬度
+                        // View Options
+                        { width: 500 } // 查看表單也設定寬度
+                    );
+                }
+
+                // 13. 處理頂部搜尋列 (Filter Toolbar)
+                if (searchToolbarEnabled) {
+                    grid.jqGrid('filterToolbar', {stringResult: true, searchOnEnter: true, defaultSearch: "cn"});
+                }
+
+                // 14. 更新程式碼片段顯示
+                updateCodeSnippetDisplay();
+            }
+
+            // 首次載入網格
+            initGrid();
+
+            // 綁定所有 checkbox 的 change 事件，每次變動都重新初始化網格
+            $('#control-panel input[type="checkbox"]').on('change', function() {
+                // 1. 處理依賴關係 (新增/刪除行 依賴 Pager)
+                var addRowChecked = $('#toggle-add-row').is(':checked');
+                var deleteRowChecked = $('#toggle-delete-row').is(':checked');
+                var pagerCheckbox = $('#toggle-pager');
+                
+                // 檢查是否有任一依賴 Pager 的功能被勾選
+                if (addRowChecked || deleteRowChecked) {
+                    // 如果是，自動勾選 Pager
+                    pagerCheckbox.prop('checked', true);
+                } 
+                
+                // 檢查 Pager 是否被取消勾選
+                if (!pagerCheckbox.is(':checked')) {
+                    // 如果 Pager 被取消，則取消所有依賴它的功能
+                    $('#toggle-add-row').prop('checked', false);
+                    $('#toggle-delete-row').prop('checked', false);
+                }
+                
+                // 2. 處理凍結欄位依賴關係 (凍結 ID 欄位 依賴 顯示資料 ID)
+                var frozenChecked = $('#toggle-frozen-columns').is(':checked');
+                var showDataIdCheckbox = $('#toggle-show-data-id');
+                var autowidthCheckbox = $('#toggle-autowidth'); // 取得 AutoWidth 控制項
+
+                if (frozenChecked) {
+                    // 如果凍結被勾選，則強制勾選顯示 ID
+                    showDataIdCheckbox.prop('checked', true);
+                    
+                    // 啟用凍結時，強制關閉 AutoWidth (讓 Grid 內部的滾動條出現)
+                    autowidthCheckbox.prop('checked', false).prop('disabled', true);
+                } else {
+                    // 禁用凍結時，恢復 AutoWidth 的控制
+                    autowidthCheckbox.prop('disabled', false);
+                }
+                
+                // 3. 重新初始化網格
+                initGrid();
+            });
+
+        });
+    </script>
+
+</body>
+</html>
